@@ -1,0 +1,48 @@
+Things to do, in sparse order:
+
+
+
+- fix compilation errors (I get at least 20), even it works ignoring them (a
+couple of files are creating most of them)
+
+- show the events on the map
+
+- scheduler.txt: what is it for? a default file if you don't provide another?
+
+- open gui first to allow input params and map selection, then show progress
+(gui off) or map (gui on)
+
+- add small legend explaining nodes and map colors
+
+- map not fixed to 1000 and take care of visualization in smaller screens
+
+- some node crosses buildings near their destination (if we color as hospital
+would make more sense, otherwise it could be seen as error)
+
+- firefighters carrying victims should not overlap or they are not visible
+
+- they go straight to victims. they should explore squares as a team.
+
+- overlayCache problem in PotentialFieldRepository
+
+- document getPlan
+
+- strange use of Queue. First use add (generates exceptions), then get x with
+peek and y with poll. Means read x, then read y and remove xy? Better to
+document it.
+
+- why you use [y][x] instead of viceversa?
+
+- not sure about this syntax:
+return overlayCache.getPlan(new int[] { xDest, yDest })[yPos][xPos] + obstacles[yPos][xPos];
+
+- FileOutput forces #time;agent;x;y;z;velocity;options\n as first line when
+given an output. Should we let it done elsewhere, keeping the class generic?
+
+- heap space exception happened with ram<4GB.
+
+- proximity with radius rather than rectangle?
+
+- FR starting from map border
+
+- Rtree extends but does not get smaller again if node number decreases

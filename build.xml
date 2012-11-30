@@ -1,0 +1,102 @@
+<project name="mobility-simulator" basedir="." default="main">
+
+  <!-- Properties for location of directories and files used in build -->
+  <property name="src.dir"	value="src/"/>
+  <property name="build.dir"	value="build"/>
+  <property name="conf.dir"	value="conf"/>
+  <property name="lib.dir"	value="lib"/>
+  <!--<property name="test.dir"	value="src/test"/>-->
+  <property name="classes.dir"	value="${build.dir}/classes"/>
+  <property name="jar.dir"	value="jar"/>
+  <property name="tests.reports.dir"	value="${build.dir}/reports"/>
+  
+  <!-- Path settings used for classpath and execution  -->
+  <path id="base.path">
+    <fileset dir="lib">
+      <include name="**/*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="test.base.path">
+    <fileset dir="${classes.dir}">
+      <include name="**/*.class"/>
+    </fileset>
+  </path>
+
+  <!-- Build targets for cleaning before build, javac compilation, jar creation and running of the tests -->
+  <target name="clean">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <delete dir="${build.dir}" failonerror="no"/>
+  </target>
+
+  <target name="init" depends="clean">
+    <mkdir dir="${build.dir}"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" debug="on">
+      <classpath refid="base.path"/>
+    </javac>
+  </target>
+
+  <target name="create.jar" depends="compile">
+
+    <exec executable="/bin/bash">
+      <arg line="${lib.dir}/refresh-user-agent-utils.sh"/>
+    </exec>
+
+    <delete dir="${build.dir}/bundled"/>
+    <mkdir dir="${build.dir}/bundled"/>
+    <mkdir dir="${jar.dir}"/>
+    <unjar dest="${build.dir}/bundled">
+      <fileset dir="${lib.dir}" includes="*.jar"/>
+    </unjar>
+    <delete file="${jar.dir}/mobility-simulator.jar"/>
+    <jar jarfile="${jar.dir}/mobility-simulator.jar">
+      <fileset dir="${classes.dir}"/>
+      <fileset dir="${build.dir}/bundled" excludes="**/META-INF/*"/>
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="de.tu_darmstadt.kom.mobilitySimulator.scenarios.Test"/>
+        <section name="common">
+          <attribute name="Project-Title" value="${ant.project.name}"/>
+        </section>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="test.compile" depends="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac srcdir="${test.dir}" destdir="${classes.dir}" debug="on">
+      <classpath refid="base.path"/>
+      <classpath refid="test.base.path" />
+    </javac>
+  </target>
+
+  <target name="test" depends="compile,test.compile">
+    <junit printsummary="yes" fork="yes" haltonfailure="yes">
+      <!-- The directory where to find the lookup files -->
+      <sysproperty key="mrTestLookupDirectory" value="lookup"/>
+      <classpath>
+        <pathelement location="${classes.dir}"/>
+        <pathelement path="${java.class.path}"/>
+        <fileset dir="${lib.dir}">
+          <include name="**/*.jar"/>
+        </fileset>
+      </classpath>
+
+      <formatter type="plain" usefile="false"/>
+
+      <batchtest fork="yes">
+        <fileset dir="${test.dir}">
+          <include name="**/*Test*.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="main" depends="init,create.jar"/>
+
+</project>

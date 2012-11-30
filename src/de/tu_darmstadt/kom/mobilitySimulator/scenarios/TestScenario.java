@@ -46,6 +46,9 @@ public class TestScenario extends AbstractScenario {
 	}
 
 	@Override
+	protected float getSimulationSpeed() { return 0.5f; }
+
+	@Override
 	protected String getMapFile() {
 		return new File(MAPS, mapFile).getAbsolutePath();
 	}
@@ -58,7 +61,7 @@ public class TestScenario extends AbstractScenario {
 	@Override
 	protected AbstractAgentRepository getAgentRepository() {
 		return new LinkedRTreeAgentRepository(DiscreteMap.sizeX,
-				DiscreteMap.sizeY);
+				DiscreteMap.sizeY, true);
 	}
 
 	@Override
@@ -147,7 +150,7 @@ public class TestScenario extends AbstractScenario {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new TestScenario().run();
+		new TestScenario().run(125);
 	}
 
 }

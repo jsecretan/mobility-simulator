@@ -49,7 +49,7 @@ public class FireEngineRole extends AbstractRole implements FirstResponderInterf
 		}
 		base = new int[] { agent.getX(), agent.getY() };
 		status = WAIT_FOR_ORDERS;
-		agent.setMobilityModel(new StaticMobilityModel(agent));
+		agent.setMobilityModel(new WalkToOnGradientMobilityModel(agent));
 		agent.setMaxVelocity((int)(80/3.6));
 		agent.setVelocity((int)(30/3.6));
 	}

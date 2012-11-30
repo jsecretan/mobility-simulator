@@ -13,6 +13,7 @@ import de.tu_darmstadt.kom.linkedRTree.Rectangle;
 import de.tu_darmstadt.kom.mobilitySimulator.core.agent.AbstractAgent;
 import de.tu_darmstadt.kom.mobilitySimulator.core.agent.AbstractRole;
 import de.tu_darmstadt.kom.mobilitySimulator.core.scheduler.Scheduler;
+import de.tu_darmstadt.kom.mobilitySimulator.core.mapEvent.MapEventTypeInterface;
 
 @Deprecated
 public class MapDrawPanel extends javax.swing.JPanel implements
@@ -39,7 +40,7 @@ public class MapDrawPanel extends javax.swing.JPanel implements
 	int sizeX, sizeY;
 
 	HashMap<AbstractRole, Color> colorsAgents;
-	HashMap<MapEventType, Color> colorsEvents;
+	HashMap<MapEventTypeInterface, Color> colorsEvents;
 
 	private boolean first = true;
 

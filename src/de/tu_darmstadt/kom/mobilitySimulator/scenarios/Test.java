@@ -163,7 +163,7 @@ public class Test {
 		 */
 		// Init. AgentRepository
 		Scheduler.agentRepository = new LinkedRTreeAgentRepository(
-				map.getSizeX(), map.getSizeY(), numberOfAgents);
+				map.getSizeX(), map.getSizeY(), numberOfAgents, false);
 
 		AbstractAgent a = null;
 

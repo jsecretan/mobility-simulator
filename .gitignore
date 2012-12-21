@@ -1,2 +1,6 @@
 .DS_Store
 **/.svn
+build
+jar
+output
+logs

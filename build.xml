@@ -43,10 +43,6 @@
 
   <target name="create.jar" depends="compile">
 
-    <exec executable="/bin/bash">
-      <arg line="${lib.dir}/refresh-user-agent-utils.sh"/>
-    </exec>
-
     <delete dir="${build.dir}/bundled"/>
     <mkdir dir="${build.dir}/bundled"/>
     <mkdir dir="${jar.dir}"/>
@@ -59,7 +55,7 @@
       <fileset dir="${build.dir}/bundled" excludes="**/META-INF/*"/>
       <manifest>
         <attribute name="Built-By" value="${user.name}"/>
-        <attribute name="Main-Class" value="de.tu_darmstadt.kom.mobilitySimulator.scenarios.Test"/>
+        <attribute name="Main-Class" value="de.tu_darmstadt.kom.mobilitySimulator.scenarios.DegreesScenario"/>
         <section name="common">
           <attribute name="Project-Title" value="${ant.project.name}"/>
         </section>

@@ -105,6 +105,26 @@ public class LinkedRTreeAgentRepository extends
 	}
 
 	@Override
+	public AbstractAgent findAgentClosestToDistance(LinkedRTreeAgent agent, double radius, Set<LinkedRTreeAgent> filterSet) {
+		
+		AbstractAgent closestAgent = null;
+
+		double minDistanceDifference = Double.MAX_VALUE;
+
+		for(LinkedRTreeAgent ag : values()) {
+			if(!filterSet.contains(ag)) {
+				double distanceDifference = Math.sqrt(Math.pow(agent.getX()-ag.getX(),2)+Math.pow(agent.getY()-ag.getY(),2));
+				if(distanceDifference < minDistanceDifference) {
+					minDistanceDifference = distanceDifference;
+					closestAgent = ag;
+				}
+			}
+		}
+
+		return closestAgent;
+	}
+
+	@Override
 	public void findIntersectingAgents(Object shape,
 			Set<LinkedRTreeAgent> container) {
 		if (shape instanceof ShapeInterface) {

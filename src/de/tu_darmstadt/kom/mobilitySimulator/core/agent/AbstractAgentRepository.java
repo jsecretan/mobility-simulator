@@ -109,6 +109,16 @@ public abstract class AbstractAgentRepository<E extends AbstractAgent>
 	public abstract void findIntersectingAgents(Object shape,
 			FilterInterface filter, Set<E> container);
 
+
+	/**
+	 * 
+	 * @param agent
+	 *            The agent
+	 * @param radius
+	 *            A distance to most closely match from agent E to another
+	*/
+	public abstract AbstractAgent findAgentClosestToDistance(E agent, double radius, Set<E> filterSet);
+
 	/**
 	 * 
 	 * @param agent

@@ -11,11 +11,10 @@ import java.util.Map;
 import net.sf.ehcache.CacheManager;
 
 import de.tu_darmstadt.kom.linkedRTree.Rectangle;
-import de.tu_darmstadt.kom.mobilitySimulator.agent.role.AmbulanceRole;
-import de.tu_darmstadt.kom.mobilitySimulator.agent.role.EarthquakeVictimRole;
+
 import de.tu_darmstadt.kom.mobilitySimulator.agent.role.FireEngineRole;
-import de.tu_darmstadt.kom.mobilitySimulator.agent.role.NormalRole;
 import de.tu_darmstadt.kom.mobilitySimulator.agent.role.RescueVehicleRole;
+import de.tu_darmstadt.kom.mobilitySimulator.agent.role.SocialNetworkerRole;
 import de.tu_darmstadt.kom.mobilitySimulator.core.AbstractScenario;
 import de.tu_darmstadt.kom.mobilitySimulator.core.OutputInterface;
 import de.tu_darmstadt.kom.mobilitySimulator.core.agent.AbstractAgent;
@@ -44,9 +43,9 @@ public class DegreesScenario extends AbstractScenario {
 
 	/** Total number of agents (nodes) on the map. */
 	private int numberOfAgents = 200;
-	private int percentageOfVictims = 10;
 
-	private int percentageOfMobileComEnabledAgents = 50;
+	// In our scenario, we only care about connected agents, so we set to 100%
+	private int percentageOfMobileComEnabledAgents = 100;
 
 	/** Total simulation length (in seconds). */
 	private int simulationLength = 60 * 60 * 3; // In seconds
@@ -54,7 +53,6 @@ public class DegreesScenario extends AbstractScenario {
 
 	/** Used map file. Also defines how large the map is. */
 	private String mapFile = "frankfurt3.png";
-	// private String mapFile = "frankfurt.png";
 
 	private final File MAPS = new File("maps");
 	private final File TRACES = new File("output/"+ ScenesScenario.class.getName());
@@ -102,15 +100,12 @@ public class DegreesScenario extends AbstractScenario {
 			e.printStackTrace();
 		}
 
+		// I guess we are getting some output of the normal agents here?
 		Collection<String> specialAgents = new ArrayList<String>();
-		// TODO: Should we use this for a special role?
-		specialAgents.add("EarthquakeVictimRole");
 		specialAgents.add("NormalRole");
 		
 		outputHelper = new AgentDensityEvaluationOutput(newTrace, index,
 				prefix, specialAgents);
-
-		outputHelper = new VictimOutput(newTrace, index, prefix, outputHelper);
 
 		return outputHelper;
 	}
@@ -149,7 +144,7 @@ public class DegreesScenario extends AbstractScenario {
 
 	@Override
 	protected String getScenarioName() {
-		return "Wireless Degree Separation Scenario";
+		return "";
 	}
 
 	@Override
@@ -161,24 +156,6 @@ public class DegreesScenario extends AbstractScenario {
 
 		// Setup cache
 		CacheManager.getInstance().addCache("largeMemoryNoDisk");
-
-		initBuckets();
-
-		/**********************
-		 * PERSONAL CODE HERE *
-		 **********************/
-
-		doMultipleRuns = false;
-
-		simulationLength = 60 * 60*3;
-
-		percentageOfMobileComEnabledAgents = 50;
-
-		simulationSpeed = 0.5f;
-
-		numberOfAgents = 800;
-
-		amountOfSimulationRuns = 20;
 
 		if (doMultipleRuns) {
 			System.err
@@ -232,12 +209,6 @@ public class DegreesScenario extends AbstractScenario {
 
 			for (int i = 2; i <= amountOfSimulationRuns; i++) {
 
-				// Reset Victim stuff;
-				EarthquakeVictimRole.getKnown().clear();
-				EarthquakeVictimRole.inRescueProc.clear();
-				EarthquakeVictimRole.toRescue.clear();
-				EarthquakeVictimRole.SECURED = 0;
-				EarthquakeVictimRole.totalVictims.clear();
 				Watchdog.clearInstance();
 				Scheduler.clearInstance();
 				// MapFactory.clearInstance();
@@ -272,39 +243,53 @@ public class DegreesScenario extends AbstractScenario {
 
 	}
 
+	//TODO, need to find generator
+	private int generateNumberOfFriends() {
+		return 1;
+	}
+
+	// TODO, Need to find generator P(d) ~ d^-1
+	private double generateFriendDistance() {
+		return 10.0;
+	}
+
 	@Override
 	public void preRun() {
 
-		// Scheduler.getInstance().setSimulationSpeed(0.5f);
-
-		/*
-		 * Agents
-		 */
 		AbstractAgent a = null;
 
 		// Normal Agents
 		for (int i = 0; i < numberOfAgents; i++) {
+			// TODO, Create agent on map also?
 			a = createAgentInGreen((Scheduler.rand.nextInt(100)) < percentageOfMobileComEnabledAgents);
-			// a = createAgentOnMap();
-			// a = createAgentInBucket();
-
-			if (Scheduler.rand.nextInt(100) < percentageOfVictims)
-				a.setRole(new EarthquakeVictimRole(a));
-			else
-				a.setRole(new NormalRole(a));
+			a.setRole(new SocialNetworkerRole(a));
 
 			Scheduler.agentRepository.put(a);
-			// AmbulanceRole.reportedVictims.add(a);
 		}
-
-
 
 		Scheduler.agentRepository.executePut();
 		System.out.println(numberOfAgents + " agents initialized.");
 
+		// Iterate over the values
+		for(AbstractAgent agent : (Collection<AbstractAgent>) Scheduler.agentRepository.values()) {
+			SocialNetworkerRole socialNetRole = (SocialNetworkerRole) agent.getRole();
+			// Pick a number of friends for the agent, and then see how many they have already been assigned
+			int additionalFriends = generateNumberOfFriends() - socialNetRole.getFriends().size();
+			for(int i = 0 ; i < additionalFriends; i++) {
+				// TODO, convert this scale to what is used in the sim
+				double friendDistance = generateFriendDistance();
+				
+				//Find the closest friend to this distance
+				socialNetRole.getFriends().add(Scheduler.agentRepository.findAgentClosestToDistance(agent, friendDistance, socialNetRole.getFriends()));
+				
+			}
+		}
+
+		// TODO, Do we want some of these events?
 		/*
 		 * Events
 		 */
+		/*
 		AbstractMapEvent e;
 
 		// Fires
@@ -358,6 +343,9 @@ public class DegreesScenario extends AbstractScenario {
 		Scheduler.mapEventRepository.put(e.getId(), e);
 		RescueVehicleRole.reportedEvents.add(e);
 
+		*/
+
+		// TODO, do we need this?
 		Scheduler.mapEventRepository.executePut();
 
 	}
@@ -365,20 +353,6 @@ public class DegreesScenario extends AbstractScenario {
 	@Override
 	public void preCycle() {
 
-	}
-
-	private void initBuckets() {
-		agentBuckets = new HashMap<Rectangle, Integer>();
-
-		agentBuckets.put(new Rectangle(0, 0, 370, 230), 0);
-		agentBuckets.put(new Rectangle(400, 0, 370, 230), 0);
-		agentBuckets.put(new Rectangle(0, 816, 370, 230), 0);
-		agentBuckets.put(new Rectangle(400, 816, 370, 230), 0);
-	}
-
-	private AbstractAgent createAgentAtHospital() {
-		return Scheduler.agentRepository.createAgent(AmbulanceRole.HOSPITAL_X,
-				AmbulanceRole.HOSPITAL_Y);
 	}
 
 	private AbstractAgent createAgentOnMap() {
@@ -392,26 +366,6 @@ public class DegreesScenario extends AbstractScenario {
 		return Scheduler.agentRepository.createAgent(x, y);
 	}
 
-	private AbstractAgent createAgentInBucket() {
-		int x, y, obstacle;
-		boolean bucket;
-		do {
-			bucket = false;
-			x = Scheduler.rand.nextInt(DiscreteMap.sizeX);
-			y = Scheduler.rand.nextInt(DiscreteMap.sizeY);
-			for (Rectangle b : agentBuckets.keySet()) {
-				if (b.containsPoint(x, y)) {
-					bucket = true;
-					agentBuckets.put(b, agentBuckets.get(b) + 1);
-					break;
-				}
-			}
-			obstacle = DiscreteMap.getInstance().getObstacles()[y][x];
-		} while (!bucket || obstacle > 100);
-
-		return Scheduler.agentRepository.createAgent(x, y);
-	}
-
 	private AbstractAgent createAgentInGreen(boolean mobileComEnabled) {
 		int x, y, percent, obstacle;
 		do {
@@ -421,44 +375,6 @@ public class DegreesScenario extends AbstractScenario {
 			// obstacle = DiscreteMap.getInstance().getObstacles()[y][x];
 		} while (percent > DiscreteMap.getInstance().getAdditionalCahnnel()[y][x]);
 		return Scheduler.agentRepository.createAgent(x, y, mobileComEnabled);
-	}
-
-	private AbstractAgent createAgentOnBorder() {
-		int x, y, obstacle, axis;
-
-		axis = Scheduler.rand.nextInt(4);
-		do {
-			switch (axis) {
-			case 0:
-				x = 0;
-				y = Scheduler.rand.nextInt(DiscreteMap.sizeY);
-				break;
-
-			case 1:
-				x = Scheduler.rand.nextInt(DiscreteMap.sizeX);
-				y = 0;
-				break;
-
-			case 2:
-				x = DiscreteMap.sizeX - 1;
-				y = Scheduler.rand.nextInt(DiscreteMap.sizeY);
-				break;
-
-			case 3:
-				x = Scheduler.rand.nextInt(DiscreteMap.sizeY);
-				y = DiscreteMap.sizeY - 1;
-				break;
-
-			default:
-				x = y = 0;
-				System.out.println("Something wrong");
-				break;
-			}
-
-			obstacle = DiscreteMap.getInstance().getObstacles()[y][x];
-		} while (obstacle > 100);
-
-		return Scheduler.agentRepository.createAgent(x, y);
 	}
 
 	@Override

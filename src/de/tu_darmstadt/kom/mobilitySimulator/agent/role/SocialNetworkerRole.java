@@ -13,7 +13,12 @@ public class SocialNetworkerRole extends PedestrianRole {
 	// Set of close friends about whom we wish to know
 	private Set<AbstractAgent> closeFriends = new HashSet<AbstractAgent>();
 
-	// TODO Choose some demographic information for our routing based on demographics
+	// Demographic information
+	public enum Gender {Male, Female};
+
+	private Gender gender;
+
+	private int age;
 
 	public SocialNetworkerRole(AbstractAgent agent) {
 		super(agent);

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import net.sf.ehcache.CacheManager;
 
 import de.tu_darmstadt.kom.linkedRTree.Rectangle;
@@ -56,6 +57,9 @@ public class DegreesScenario extends AbstractScenario {
 
 	private final File MAPS = new File("maps");
 	private final File TRACES = new File("output/"+ ScenesScenario.class.getName());
+
+	//TODO: Figure out how to get this number for real
+	private final double PIXELS_TO_MILES = 1000;
 
 	private Map<Rectangle, Integer> agentBuckets;
 
@@ -243,14 +247,52 @@ public class DegreesScenario extends AbstractScenario {
 
 	}
 
-	//TODO, need to find generator
 	private int generateNumberOfFriends() {
-		return 1;
+		return (int) (Math.exp(Math.log((Scheduler.rand.nextDouble()-1.99203*Math.pow(24.0,-0.502))/-1.99203)/-0.502) - 24);
 	}
 
-	// TODO, Need to find generator P(d) ~ d^-1
-	private double generateFriendDistance() {
-		return 10.0;
+
+	private double calculateFriendshipByGender(boolean isAgentMale, boolean isFriendMale) {
+		
+		if(isAgentMale && isFriendMale) {
+			return 0.4869;
+		} else if(!isAgentMale && !isFriendMale) {
+			return 0.5178;
+		} else if(!isAgentMale && isFriendMale) {
+			return 0.4822;
+		} else {
+			return 0.5131;
+		}
+	}
+
+	private double calculateFriendshipByAge(int agentAge, int friendAge) {
+
+		//Row is the age from 20 to 60 of the agent, and the column is the age of the friend
+		double ageProbabilityMatrix[][] = {
+			{0.80, 0.1, 0.033, 0.033, 0.033},
+			{0.25, 0.50, 0.15,  0.05, 0.05},
+			{0.2, 0.2, 0.5, 0.05, 0.05},
+			{0.2, 0.2, 0.2, 0.3, 0.1},
+			{0.175, 0.175, 0.175, 0.175, 0.3}
+		};
+
+		return ageProbabilityMatrix[(agentAge/10)-2][(friendAge/10)-2];
+
+	}
+
+	private double calculateFriendshipProbability(AbstractAgent originAgent, AbstractAgent potentialFriend, 
+		SocialNetworkerRole potentialFriendProfie) {
+
+		double distance = Math.sqrt(Math.pow(originAgent.getX()-potentialFriend.getX(),2)+Math.pow(originAgent.getY()-potentialFriend.getY(),2)) / PIXELS_TO_MILES;
+				
+		boolean isAgentMale = originAgent.isMale;
+		boolean isFriendMale = potentialFriend.isMale;
+
+		int agentAge = originAgent.age;
+		int friendAge = potentialFriend.age;
+
+		return Math.pow(0.195716+distance,-1.050)*calculateFriendshipByGender(isAgentMale, isFriendMale)*calculateFriendshipByAge(agentAge, friendAge);
+
 	}
 
 	@Override
@@ -264,6 +306,13 @@ public class DegreesScenario extends AbstractScenario {
 			a = createAgentInGreen((Scheduler.rand.nextInt(100)) < percentageOfMobileComEnabledAgents);
 			a.setRole(new SocialNetworkerRole(a));
 
+			// Set the demographics/properties of the agent
+			//Half and half male or female
+			a.isMale = Scheduler.rand.nextBoolean();
+
+			// Ages 20-60, only use the decade number instead of a more specific age
+			a.age = (Scheduler.rand.nextInt(5)+2)*10;
+
 			Scheduler.agentRepository.put(a);
 		}
 
@@ -276,11 +325,40 @@ public class DegreesScenario extends AbstractScenario {
 			// Pick a number of friends for the agent, and then see how many they have already been assigned
 			int additionalFriends = generateNumberOfFriends() - socialNetRole.getFriends().size();
 			for(int i = 0 ; i < additionalFriends; i++) {
-				// TODO, convert this scale to what is used in the sim
-				double friendDistance = generateFriendDistance();
 				
-				//Find the closest friend to this distance
-				socialNetRole.getFriends().add(Scheduler.agentRepository.findAgentClosestToDistance(agent, friendDistance, socialNetRole.getFriends()));
+				Set<AbstractAgent> filterSet = socialNetRole.getFriends();
+
+				//Add the agent himself
+				filterSet.add(agent);
+
+				//Set to keep the probabilities of friendship
+				HashMap<AbstractAgent,Double> probabilities = new HashMap<AbstractAgent,Double>();
+
+				//Iterate through each user to get their probability of being a friend
+				for(AbstractAgent candiateFriend : (Collection<AbstractAgent>) Scheduler.agentRepository.values()) {
+					if(!filterSet.contains(candiateFriend)) {
+						probabilities.put(agent,calculateFriendshipProbability(agent,candiateFriend,socialNetRole));
+					}
+				}
+
+				// Get the sum of the probabilities, so we can scale them all back
+				double totalProbability = 0.0;
+				for(Double probability : probabilities.values()) {
+					totalProbability += probability;
+				}
+
+				// Randomly guess a number from 0 to 1
+				double randomFriendChoice = Scheduler.rand.nextDouble() * totalProbability;
+
+				// Now go through the agents and choose based on probability
+				double cumulativeProbability = 0.0;
+				for(AbstractAgent candiateFriend : probabilities.keySet()) {
+					cumulativeProbability += probabilities.get(agent);
+					if(cumulativeProbability >= randomFriendChoice) {
+						socialNetRole.getFriends().add(agent);
+						break;
+					}
+				}
 				
 			}
 		}

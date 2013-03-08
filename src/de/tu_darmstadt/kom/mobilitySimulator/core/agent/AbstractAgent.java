@@ -37,6 +37,10 @@ public abstract class AbstractAgent {
 
 	private Set<AbstractAgent> tmpAgentSet;
 
+	public boolean isMale;
+
+	public int age;
+
 	public AbstractAgent(int x, int y, boolean mobileCommunicationEnabled) {
 		// this.id = id;
 

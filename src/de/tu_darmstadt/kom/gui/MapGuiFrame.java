@@ -42,6 +42,7 @@ import de.tu_darmstadt.kom.mobilitySimulator.core.scheduler.Scheduler;
 import de.tu_darmstadt.kom.mobilitySimulator.linkedRTree.LinkedRTreeCollapsedBuildingMapEvent;
 import de.tu_darmstadt.kom.mobilitySimulator.linkedRTree.LinkedRTreeFireMapEvent;
 import de.tu_darmstadt.kom.mobilitySimulator.linkedRTree.LinkedRTreeMapEvent;
+import de.tu_darmstadt.kom.mobilitySimulator.agent.role.SocialNetworkerRole;
 
 /**
  * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI
@@ -582,6 +583,17 @@ public class MapGuiFrame extends javax.swing.JFrame implements
 									* offset);
 				}
 
+				// Now draw the friendship connections
+				// TODO, Generalize this so we can run other agents in roles besides our own
+
+				SocialNetworkerRole socialNetRole = (SocialNetworkerRole) agent.getRole();
+
+
+				//System.out.println("Number of friends : "+socialNetRole.getFriends().size());
+
+				for(AbstractAgent friend : socialNetRole.getFriends()) {
+					g2.drawLine(agent.getX(), agent.getY(), friend.getX(), friend.getY());
+				}
 				// /*
 				// * Icons
 				// */

@@ -61,6 +61,8 @@ public class DegreesScenario extends AbstractScenario {
 	//TODO: Figure out how to get this number for real
 	private final double PIXELS_TO_MILES = 1000;
 
+	private final double PROPORTION_OF_FRIENDS_WITHIN_SIM_WINDOW = 0.1;
+
 	private Map<Rectangle, Integer> agentBuckets;
 
 	@Override
@@ -248,7 +250,7 @@ public class DegreesScenario extends AbstractScenario {
 	}
 
 	private int generateNumberOfFriends() {
-		return (int) (Math.exp(Math.log((Scheduler.rand.nextDouble()-1.99203*Math.pow(24.0,-0.502))/-1.99203)/-0.502) - 24);
+		return (int) Math.min(PROPORTION_OF_FRIENDS_WITHIN_SIM_WINDOW*(Math.exp(Math.log((Scheduler.rand.nextDouble()-5.40996*Math.pow(24.0,-0.502))/-5.40996)/-0.502) - 24), numberOfAgents-1);
 	}
 
 
@@ -280,8 +282,7 @@ public class DegreesScenario extends AbstractScenario {
 
 	}
 
-	private double calculateFriendshipProbability(AbstractAgent originAgent, AbstractAgent potentialFriend, 
-		SocialNetworkerRole potentialFriendProfie) {
+	private double calculateFriendshipProbability(AbstractAgent originAgent, AbstractAgent potentialFriend) {
 
 		double distance = Math.sqrt(Math.pow(originAgent.getX()-potentialFriend.getX(),2)+Math.pow(originAgent.getY()-potentialFriend.getY(),2)) / PIXELS_TO_MILES;
 				
@@ -324,20 +325,16 @@ public class DegreesScenario extends AbstractScenario {
 			SocialNetworkerRole socialNetRole = (SocialNetworkerRole) agent.getRole();
 			// Pick a number of friends for the agent, and then see how many they have already been assigned
 			int additionalFriends = generateNumberOfFriends() - socialNetRole.getFriends().size();
+
 			for(int i = 0 ; i < additionalFriends; i++) {
 				
-				Set<AbstractAgent> filterSet = socialNetRole.getFriends();
-
-				//Add the agent himself
-				filterSet.add(agent);
-
 				//Set to keep the probabilities of friendship
 				HashMap<AbstractAgent,Double> probabilities = new HashMap<AbstractAgent,Double>();
 
 				//Iterate through each user to get their probability of being a friend
-				for(AbstractAgent candiateFriend : (Collection<AbstractAgent>) Scheduler.agentRepository.values()) {
-					if(!filterSet.contains(candiateFriend)) {
-						probabilities.put(agent,calculateFriendshipProbability(agent,candiateFriend,socialNetRole));
+				for(AbstractAgent candidateFriend : (Collection<AbstractAgent>) Scheduler.agentRepository.values()) {
+					if(!socialNetRole.getFriends().contains(candidateFriend) && agent != candidateFriend) {
+						probabilities.put(candidateFriend,calculateFriendshipProbability(agent,candidateFriend));
 					}
 				}
 
@@ -352,10 +349,12 @@ public class DegreesScenario extends AbstractScenario {
 
 				// Now go through the agents and choose based on probability
 				double cumulativeProbability = 0.0;
-				for(AbstractAgent candiateFriend : probabilities.keySet()) {
-					cumulativeProbability += probabilities.get(agent);
+				for(AbstractAgent candidateFriend : probabilities.keySet()) {
+					cumulativeProbability += probabilities.get(candidateFriend);
 					if(cumulativeProbability >= randomFriendChoice) {
-						socialNetRole.getFriends().add(agent);
+						// Set both friends
+						socialNetRole.getFriends().add(candidateFriend);
+						((SocialNetworkerRole) candidateFriend.getRole()).getFriends().add(agent);
 						break;
 					}
 				}
